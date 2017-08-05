@@ -8,6 +8,7 @@ l = logging.getLogger('cle.relocations.arm')
 
 arch = 'ARM'
 
+<<<<<<< Updated upstream
 '''
 Reference: "ELF for the ARM Architecture ABI r2.10"
     http://infocenter.arm.com/help/topic/com.arm.doc.ihi0044e/IHI0044E_aaelf.pdf
@@ -17,6 +18,15 @@ class ARMRelocation:
     """
     Some items shared across ARM relocations. Eventually, much more can
     be put in here...
+=======
+# Reference: "ELF for the ARM Architecture ABI r2.10"
+# http://infocenter.arm.com/help/topic/com.arm.doc.ihi0044e/IHI0044E_aaelf.pdf
+
+
+class ARMRelocation:
+    """
+    Some shared functionality for ARM relocations.
+>>>>>>> Stashed changes
     """
     @staticmethod
     def _applyReloc(inst, result, mask=0xFFFFFFFF):
@@ -27,6 +37,7 @@ class ARMRelocation:
     def _isThumbFunc(symbol, addr):
         return (addr % 2 == 1) and symbol.is_function
 
+<<<<<<< Updated upstream
 '''
 With thanks to LLVM and Apple...
 https://opensource.apple.com/source/clang/clang-137/src/lib/Target/ARM/ARMJITInfo.cpp
@@ -50,6 +61,27 @@ class R_ARM_CALL(Relocation):
     #    if result & 0x04000000: result |= 0xF0000000
     #    l.debug("3 A = self.addend = %s", hex(result))
     #    return result
+=======
+class R_ARM_CALL(Relocation):
+    """
+    Relocate R_ARM_CALL symbols via instruction modification. It additionally
+    handles R_ARM_PC24 and R_ARM_JUMP24. The former is deprecated and is now
+    just the same as R_ARM_CALL. 
+    
+    R_ARM_JUMP24 doesn't need the Thumb check. Technically, if the Thumb check
+    succeeds on R_ARM_JUMP24, it's a bad call that shouldn't have been generated
+    by the linker, so we may as well as just treat it like R_ARM_CALL.
+    
+    Class: Static
+    Type: ARM (R_ARM_CALL, R_ARM_JUMP24); Deprecated (R_ARM_PC24)
+    Code: 1 (R_ARM_PC24), 28 (R_ARM_CALL), 29 (R_ARM_JUMP24)
+    Operation: ((S + A) | T) - P
+        - S is the address of the symbol
+        - A is the addend
+        - P is the target location (place being relocated)
+        - T is 1 if the symbol is of type STT_FUNC and addresses a Thumb instruction
+    """
+>>>>>>> Stashed changes
         
     @property
     def value(self):
@@ -58,6 +90,7 @@ class R_ARM_CALL(Relocation):
         S = self.resolvedby.rebased_addr                # The symbol's "value", where it points to
         T = ARMRelocation._isThumbFunc(self.symbol, S)
         
+<<<<<<< Updated upstream
         l.debug("((S + A)) | T - P")
         l.debug("P = self.rebased_addr = %s", hex(self.rebased_addr))
         l.debug("A = self.addend = %s", hex(A))
@@ -76,6 +109,11 @@ class R_ARM_CALL(Relocation):
         imm24 = (result & 0x03FFFFFC) >> 2              # Sign_extend(inst[25:2])
         #l.debug('Assert: %x', imm24 >= -33554432 and imm24 <= 33554428) # Check for overflow
         
+=======
+        if inst & 0x00800000: A |= 0xFF000000           # Sign extend to 32-bits
+        result = ((S + A) | T) - P                      # Do the initial work
+        imm24 = (result & 0x03FFFFFC) >> 2              # Sign_extend(inst[25:2])
+>>>>>>> Stashed changes
         
         if T:                                           # Do Thumb relocation
             mask = 0xFF000000
@@ -85,6 +123,7 @@ class R_ARM_CALL(Relocation):
             mask = 0xFFFFFF
             result = ARMRelocation._applyReloc(inst, imm24, mask)
             
+<<<<<<< Updated upstream
         
         
         self.owner_obj.memory.write_addr_at(AT.from_lva(self.addr, self.owner_obj).to_rva(), result)
@@ -135,6 +174,42 @@ class R_ARM_PREL31(Relocation):
         #l.debug("%s relocated to: %s", self.symbol.name, hex(result))
         return result
 '''
+=======
+        self.owner_obj.memory.write_addr_at(AT.from_lva(self.addr, self.owner_obj).to_rva(), result)
+        l.debug("%s relocated as R_ARM_CALL/R_ARM_JUMP24 with new instruction: 0x%x", self.symbol.name, result)
+        return True
+     
+class R_ARM_PREL31(Relocation):
+    """
+    Relocate R_ARM_PREL31 symbols via instruction modification. The difference
+    between this and R_ARM_CALL/R_ARM_PC24/R_ARM_JUMP24 is that it's a data
+    relocation
+    
+    Class: Static
+    Type: Data
+    Code: 42
+    Operation: ((S + A) | T) - P
+        - S is the address of the symbol
+        - A is the addend
+        - P is the target location (place being relocated)
+        - T is 1 if the symbol is of type STT_FUNC and addresses a Thumb instruction
+    """
+    @property
+    def value(self):
+        P = self.rebased_addr                           # Location of this instruction
+        A = self.addend                                 # The instruction
+        S = self.resolvedby.rebased_addr                # The symbol's "value", where it points to
+        T = ARMRelocation._isThumbFunc(self.symbol, S)
+        
+        if A & 0x01000000: A |= 0xF1000000              # Sign extend 31-bits
+        result = ((S + A) | T) - P                      # Do the initial work
+        mask = 0x7FFFFFFF
+        rel31 = result & mask
+        result = ARMRelocation._applyReloc(A, rel31, mask)
+        l.debug("%s relocated as R_ARM_PREL31 to: 0x%x", self.symbol.name, result)
+        return result
+
+>>>>>>> Stashed changes
 
 R_ARM_COPY          = generic.GenericCopyReloc
 R_ARM_GLOB_DAT      = generic.GenericJumpslotReloc
@@ -146,7 +221,10 @@ R_ARM_TLS_DTPMOD32  = generic_elf.GenericTLSModIdReloc
 R_ARM_TLS_DTPOFF32  = generic_elf.GenericTLSDoffsetReloc
 R_ARM_TLS_TPOFF32   = generic_elf.GenericTLSOffsetReloc
 
+<<<<<<< Updated upstream
 #R_ARM_CALL          = ARMPCRelativeAddendReloc32
+=======
+>>>>>>> Stashed changes
 R_ARM_JUMP24        = R_ARM_CALL
 R_ARM_PC24          = R_ARM_CALL
 
