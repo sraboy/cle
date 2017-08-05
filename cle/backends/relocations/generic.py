@@ -91,3 +91,5 @@ class RelocTruncate32Mixin(object):
 
         by = struct.pack(self.owner_obj.arch.struct_fmt(32), val % (2**32))
         self.owner_obj.memory.write_bytes(AT.from_lva(self.dest_addr, self.owner_obj).to_rva(), by)
+
+

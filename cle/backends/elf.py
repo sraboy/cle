@@ -636,8 +636,16 @@ class ELF(MetaELF):
                     if reloc is not None:
                         relocs.append(reloc)
                         self.relocs.append(reloc)
+            elif self.arch.name == 'ARM' or self.arch.name == 'ARMEL' or self.arch.name == 'ARMHF':
+                symbol = self.get_symbol(readelf_reloc.entry.r_info_sym, symtab)
+                if symbol.name == 'ACMELEDFailure': l.debug('Processing reloc for %s at %x', symbol.name, symbol.addr)
+                reloc = self._make_reloc(readelf_reloc, symbol, dest_sec)
+                if reloc is not None:
+                    relocs.append(reloc)
+                    self.relocs.append(reloc)
             else:
                 symbol = self.get_symbol(readelf_reloc.entry.r_info_sym, symtab)
+                if symbol.name == 'ACMELEDFailure': l.debug('Processing reloc for %s at %x', symbol.name, symbol.addr)
                 reloc = self._make_reloc(readelf_reloc, symbol, dest_sec)
                 if reloc is not None:
                     relocs.append(reloc)
@@ -648,13 +656,15 @@ class ELF(MetaELF):
         addend = readelf_reloc.entry.r_addend if readelf_reloc.is_RELA() else None
         RelocClass = get_relocation(self.arch.name, readelf_reloc.entry.r_info_type)
         if RelocClass is None:
+            if symbol.name == 'ACMELEDFailure': l.debug('******No relocation found for %s',symbol.name)
             return None
 
         if dest_section is not None:
             remap_offset = dest_section.remap_offset
         else:
             remap_offset = 0
-
+        
+        if symbol.name == 'ACMELEDFailure': l.debug('******Making RelocClass for %s at %s with A=%s', symbol.name, hex(readelf_reloc.entry.r_offset + remap_offset), addend)
         return RelocClass(self, symbol, readelf_reloc.entry.r_offset + remap_offset, addend)
 
     def __register_tls(self, seg_readelf):
@@ -692,6 +702,7 @@ class ELF(MetaELF):
                 self.__register_section_symbols(sec_readelf)
             if isinstance(sec_readelf, elffile.RelocationSection) and not \
                     ('DT_REL' in self._dynamic or 'DT_RELA' in self._dynamic or 'DT_JMPREL' in self._dynamic):
+                l.debug('Registering %d relocations for %s', sec_readelf.num_relocations(), sec_readelf.name)
                 self.__register_relocs(sec_readelf)
 
             if section.occupies_memory:      # alloc flag - stick in memory maybe!

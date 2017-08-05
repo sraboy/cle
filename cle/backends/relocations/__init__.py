@@ -80,6 +80,7 @@ class Relocation(object):
         if self.is_rela:
             return self._addend
         else:
+            if self.symbol.name == 'ACMELEDFailure': l.debug('Fetching addend from %x',AT.from_lva(self.addr, self.owner_obj).to_rva())
             return self.owner_obj.memory.read_addr_at(AT.from_lva(self.addr, self.owner_obj).to_rva(), orig=True)
 
     def resolve_symbol(self, solist, bypass_compatibility=False):
