@@ -6,57 +6,17 @@ from . import Backend
 from ..address_translator import AT
 from ..errors import CLEOperationError
 from ..utils import stream_or_path
+from elftools.elf.descriptions import describe_ei_osabi
 
 __all__ = ('MetaELF',)
 
-'''
-Primarily from binutils (https://github.com/gittup/binutils/blob/gittup/include/elf/common.h)
-
-Others found scattered around the web. Apparently, some odd ones 
-came from GCC's poor implementation of this field in the past.
-
-- http://refspecs.linuxbase.org/elf/gabi4+/ch4.eheader.html
-- https://sourceforge.net/p/elftoolchain/tickets/275/
-- http://hte.sourceforge.net/doxygenized-0.8.0pre1/elfstruc_8h-source.html
-- https://github.com/TheCodeArtist/elf-parser/blob/master/elf-parser.c
-- https://sourceware.org/ml/libc-alpha/2010-03/msg00061.html
-'''
-ELFABIs = {
-'ELFOSABI_NONE'         : 'No extensions or unspecified',   #0x00
-'ELFOSABI_SYSV'         : 'Unix - System V',                #0x00
-'ELFOSABI_HPUX'         : 'Hewlett-Packard HP-UX',          #0x01
-'ELFOSABI_NETBSD'       : 'NetBSD',                         #0x02
-'ELFOSABI_GNU'          : 'Linux',                          #0x03
-'ELFOSABI_LINUX'        : 'Linux',                          #0x03
-'ELFOSABI_HURD'         : 'GNU/Hurd Kernel',                #0x04
-'ELFOSABI_86OPEN'       : '86Open IA32 ABI',                #0x05
-'ELFOSABI_SOLARIS'      : 'Sun Solaris',                    #0x06
-'ELFOSABI_AIX'          : 'AIX',                            #0x07
-'ELFOSABI_MONTEREY'     : 'AIX',                            #0x07
-'ELFOSABI_IRIX'         : 'IRIX',                           #0x08
-'ELFOSABI_FREEBSD'      : 'FreeBSD',                        #0x09
-'ELFOSABI_TRU64'        : 'Compaq TRU64 UNIX',              #0x0a
-'ELFOSABI_MODESTO'      : 'Novell Modesto',                 #0x0b
-'ELFOSABI_OPENBSD'      : 'OpenBSD',                        #0x0c
-'ELFOSABI_OPENVMS'      : 'OpenVMS',                        #0x0d
-'ELFOSABI_NSK'          : 'Hewlett-Packard Non-Stop Kernel',#0x0e
-'ELFOFABI_AROS'         : 'Amiga Research OS',              #0x0f
-'ELFOSABI_ARM_AEABI'    : 'ARM EABI',                       #0x20
-'ELFOSABI_ARM'          : 'ARM',                            #0x61
-'ELFOSABI_STANDALONE'   : 'Standalone (embedded) application', #0xff
-}
-
-#TODO: Change above to looking up ident_raw so we can find non-enums:
-#0x10 = Fenix OS
-#0x11 = CloudABI
-#0x53 = Sortix
 class MetaELF(Backend):
     """
     A base class that implements functions used by all backends that can load an ELF.
     """
     def __init__(self, *args, **kwargs):
         super(MetaELF, self).__init__(*args, **kwargs)
-        self.os = ELFABIs[elftools.elf.elffile.ELFFile(self.binary_stream).header.e_ident.EI_OSABI]
+        self.os = describe_ei_osabi(elftools.elf.elffile.ELFFile(self.binary_stream).header.e_ident.EI_OSABI)
         self._plt = {}
         self.elfflags = 0
         self.ppc64_initial_rtoc = None
