@@ -9,7 +9,7 @@ from .regions import PESection
 from .. import register_backend, Backend
 from ...address_translator import AT
 from ..relocations import get_relocation
-from ..relocations.generic_pe import WinReloc
+from ..relocations.generic_pe import WinReloc, DllImport
 
 l = logging.getLogger('cle.pe')
 
@@ -122,10 +122,10 @@ class PE(Backend):
                     imp_name = imp.name
                     if imp_name is None: # must be an import by ordinal
                         imp_name = "%s.ordinal.%d" % (entry.dll, imp.ordinal)
-                    symb = WinSymbol(self, imp_name, 0, True, False, imp.ordinal)
-                    addr = AT.from_lva(imp.address, self).to_rva()
 
-                    reloc = self._make_reloc(symbol=symb, resolvewith=entry.dll, addr=addr, reloc_type=None, next_rva=None)
+                    symb = WinSymbol(owner=self, name=imp_name, addr=0, is_import=True, is_export=False, ordinal_number=imp.ordinal, resolvewith=entry.dll)
+                    reloc = self._make_reloc(addr=AT.from_lva(imp.address, self).to_rva(), reloc_type=None, symbol=symb, resolvewith=entry.dll)
+
                     if reloc is not None:
                         self.imports[imp_name] = reloc
                         self.relocs.append(reloc)
@@ -149,18 +149,16 @@ class PE(Backend):
                 self.pic = True # no idea how else to do this...
                 reloc_data = base_reloc.entries[entry_idx]
 
-                if reloc_data.type == pefile.RELOCATION_TYPE['IMAGE_REL_BASED_HIGHADJ']: #occupies 2 entries
+                if reloc_data.type == pefile.RELOCATION_TYPE['IMAGE_REL_BASED_HIGHADJ']: # special case, occupies 2 entries
                     if entry_idx == len(base_reloc.entries):
-                        l.warning('PE contains corrupt relocation table')
+                        l.warning('PE contains corrupt base relocation table')
                         break
+
                     next_entry = base_reloc.entries[entry_idx]
                     entry_idx += 1
-                    reloc = self._make_reloc(symbol=None, addr=reloc_data.rva, resolvewith=None, reloc_type=reloc_data.type, next_rva=next_entry.rva)
-                    l.debug('Registered IMAGE_REL_BASED_HIGHADJ. RelocClass: %s', str(reloc))
-
+                    reloc = self._make_reloc(addr=reloc_data.rva, reloc_type=reloc_data.type, next_rva=next_entry.rva)
                 else:
-                    #l.debug('Registering reloc_data.type %d', reloc_data.type)
-                    reloc = self._make_reloc(symbol=None, addr=reloc_data.rva, resolvewith=None, reloc_type=reloc_data.type, next_rva=None)
+                    reloc = self._make_reloc(addr=reloc_data.rva, reloc_type=reloc_data.type)
 
                 if reloc is not None:
                     self.relocs.append(reloc)
@@ -169,18 +167,26 @@ class PE(Backend):
 
         return self.relocs
 
-    def _make_reloc(self, symbol, addr, resolvewith, reloc_type, next_rva):
-        if reloc_type is None:  # for DLL imports
-            #l.debug('Registering DLL import: %s', symbol.name)
-            return WinReloc(self, symbol, addr, resolvewith, reloc_type=None) #, next_rva=None)
+    def _make_reloc(self, addr, reloc_type, symbol=None, next_rva=None, resolvewith=None):
 
+        # Handle special cases first
+
+        if reloc_type == 0:         # 0 simply means "ignore this relocation"
+            return None
+        if reloc_type is None:      # for DLL imports
+            reloc = DllImport(owner=self, symbol=symbol, addr=addr, resolvewith=resolvewith)
+            return reloc
+        if next_rva is not None:
+            reloc = generic_pe.IMAGE_REL_BASED_HIGHADJ(owner=self, symbol=None, addr=addr, next_rva=next_rva)
+            return reloc
+
+        # Handle all the normal base relocations
         RelocClass = get_relocation('pe' + self.arch.name, reloc_type)
         if RelocClass is None:
-            if reloc_type > 0:
-                l.debug('Failed to find relocation class for arch %s, type %d', 'pe'+self.arch.name, reloc_type)
+            l.debug('Failed to find relocation class for arch %s, type %d', 'pe'+self.arch.name, reloc_type)
             return None
 
-        cls = RelocClass(owner=self, symbol=symbol, addr=addr, resolvewith=resolvewith, reloc_type=reloc_type, next_rva=next_rva)
+        cls = RelocClass(owner=self, symbol=symbol, addr=addr)
         if cls is None:
             l.warn('Failed to retrieve relocation for %s of type %s', symbol.name, reloc_type)
 

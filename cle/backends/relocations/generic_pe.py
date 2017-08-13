@@ -9,14 +9,19 @@ l = logging.getLogger('cle.backends.pe.generic_pe')
 # Reference: https://msdn.microsoft.com/en-us/library/ms809762.aspx
 class WinReloc(Relocation):
     """
-    Represents a relocation for the PE format.
+    :ivar is_base_reloc:    These relocations would be ignored by the linker if the executable were
+                            loaded at its preferred base address.
     """
-    def __init__(self, owner, symbol, addr, resolvewith, reloc_type=None, next_rva=None): # pylint: disable=unused-argument
+    def __init__(self, owner, symbol, addr, resolvewith=None):#, reloc_type=None, next_rva=None): # pylint: disable=unused-argument
         super(WinReloc, self).__init__(owner, symbol, addr, None)
+
+        self.is_base_reloc = True if symbol == None else False
+        self.is_import = not self.is_base_reloc
+
         self.resolvewith = resolvewith
         if self.resolvewith is not None:
             self.resolvewith = self.resolvewith.lower()
-        self.reloc_type = reloc_type
+
 
     def resolve_symbol(self, solist, bypass_compatibility=False):
         if not bypass_compatibility:
@@ -28,10 +33,6 @@ class WinReloc(Relocation):
         if self.resolved:
             return self.resolvedby.rebased_addr
 
-    @property
-    def addend(self):
-        return self.owner_obj.mapped_base
-
     def relocate(self, solist, bypass_compatibility=False):
         if self.owner_obj.image_base_delta == 0:
             return
@@ -40,6 +41,13 @@ class WinReloc(Relocation):
             self.owner_obj.memory.write_bytes(self.relative_addr, self.value)
         else:
             return super(WinReloc, self).relocate(solist, bypass_compatibility)
+
+class DllImport(WinReloc):
+    """
+    There's nothing special to be done for DLL imports but this class
+    provides a unique name to the relocation type.
+    """
+    pass
 
 
 class IMAGE_REL_BASED_HIGHADJ(WinReloc):
