@@ -4,7 +4,7 @@ class PESection(Section):
     """
     Represents a section for the PE format.
     """
-    def __init__(self, pe_section, remap_offset=0):
+    def __init__(self, pe_section, remap_offset=0, align=None):
         super(PESection, self).__init__(
             pe_section.Name,
             pe_section.Misc_PhysicalAddress,
@@ -13,6 +13,7 @@ class PESection(Section):
         )
 
         self.characteristics = pe_section.Characteristics
+        self.align           = align
 
     #
     # Public properties

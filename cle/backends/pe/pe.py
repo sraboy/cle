@@ -5,10 +5,11 @@ import archinfo
 import pefile
 
 from .symbol import WinSymbol
-from .reloc import WinReloc
 from .regions import PESection
 from .. import register_backend, Backend
 from ...address_translator import AT
+from ..relocations import get_relocation
+from ..relocations.generic_pe import WinReloc
 
 l = logging.getLogger('cle.pe')
 
@@ -36,6 +37,7 @@ class PE(Backend):
             self.set_arch(archinfo.arch_from_id(pefile.MACHINE_TYPE[self._pe.FILE_HEADER.Machine]))
 
         self.mapped_base = self.linked_base = self._pe.OPTIONAL_HEADER.ImageBase
+
         self._entry = AT.from_rva(self._pe.OPTIONAL_HEADER.AddressOfEntryPoint, self).to_lva()
 
         if hasattr(self._pe, 'DIRECTORY_ENTRY_IMPORT'):
@@ -62,7 +64,7 @@ class PE(Backend):
         self._symbol_cache = self._exports # same thing
         self._handle_imports()
         self._handle_exports()
-        self._handle_relocs()
+        self.__register_relocs()
         self._register_tls()
         self._register_sections()
         self.linking = 'dynamic' if self.deps else 'static'
@@ -121,9 +123,12 @@ class PE(Backend):
                     if imp_name is None: # must be an import by ordinal
                         imp_name = "%s.ordinal.%d" % (entry.dll, imp.ordinal)
                     symb = WinSymbol(self, imp_name, 0, True, False, imp.ordinal)
-                    reloc = WinReloc(self, symb, AT.from_lva(imp.address, self).to_rva(), entry.dll)
-                    self.imports[imp_name] = reloc
-                    self.relocs.append(reloc)
+                    addr=AT.from_lva(imp.address, self).to_rva()
+
+                    reloc = self._make_reloc(symbol=symb, resolvewith=entry.dll, addr=addr, reloc_type=None, next_rva=None)
+                    if reloc is not None:
+                        self.imports[imp_name] = reloc
+                        self.relocs.append(reloc)
 
     def _handle_exports(self):
         if hasattr(self._pe, 'DIRECTORY_ENTRY_EXPORT'):
@@ -133,24 +138,57 @@ class PE(Backend):
                 self._exports[exp.name] = symb
                 self._ordinal_exports[exp.ordinal] = symb
 
-    def _handle_relocs(self):
-        if hasattr(self._pe, 'DIRECTORY_ENTRY_BASERELOC'):
-            for base_reloc in self._pe.DIRECTORY_ENTRY_BASERELOC:
-                entry_idx = 0
-                while entry_idx < len(base_reloc.entries):
-                    self.pic = True # no idea how else to do this...
-                    reloc_data = base_reloc.entries[entry_idx]
-                    if reloc_data.type == pefile.RELOCATION_TYPE['IMAGE_REL_BASED_HIGHADJ']: #occupies 2 entries
-                        if entry_idx == len(base_reloc.entries):
-                            l.warning('PE contains corrupt relocation table')
-                            break
-                        next_entry = base_reloc.entries[entry_idx]
-                        entry_idx += 1
-                        reloc = WinReloc(self, None, reloc_data.rva, None, reloc_type=reloc_data.type, next_rva=next_entry.rva)
-                    else:
-                        reloc = WinReloc(self, None, reloc_data.rva, None, reloc_type=reloc_data.type)
-                    self.relocs.append(reloc)
+    def __register_relocs(self):
+        if not hasattr(self._pe, 'DIRECTORY_ENTRY_BASERELOC'):
+            l.warn('No relocations found')
+            return
+
+        for base_reloc in self._pe.DIRECTORY_ENTRY_BASERELOC:
+            entry_idx = 0
+            while entry_idx < len(base_reloc.entries):
+                self.pic = True # no idea how else to do this...
+                reloc_data = base_reloc.entries[entry_idx]
+
+                if reloc_data.type == pefile.RELOCATION_TYPE['IMAGE_REL_BASED_HIGHADJ']: #occupies 2 entries
+                    if entry_idx == len(base_reloc.entries):
+                        l.warning('PE contains corrupt relocation table')
+                        break
+                    next_entry = base_reloc.entries[entry_idx]
                     entry_idx += 1
+                    reloc = self._make_reloc(symbol=None, addr=reloc_data.rva, resolvewith=None, reloc_type=reloc_data.type, next_rva=next_entry.rva)
+                    l.debug('Registered IMAGE_REL_BASED_HIGHADJ. RelocClass: %s', str(reloc))
+
+                else:
+                    #l.debug('Registering reloc_data.type %d', reloc_data.type)
+                    reloc = self._make_reloc(symbol=None, addr=reloc_data.rva, resolvewith=None, reloc_type=reloc_data.type, next_rva=None)
+
+
+                if reloc is not None:
+                    self.relocs.append(reloc)
+
+                entry_idx += 1
+
+        return self.relocs
+
+    def _make_reloc(self, symbol, addr, resolvewith, reloc_type, next_rva):
+        if reloc_type is None:  # for DLL imports
+            #l.debug('Registering DLL import: %s', symbol.name)
+            return WinReloc(self, symbol, addr, resolvewith, reloc_type=None) #, next_rva=None)
+
+        RelocClass = get_relocation('pe' + self.arch.name, reloc_type)
+        if RelocClass is None:
+            if reloc_type > 0:
+                l.debug('Failed to find relocation class for arch %s, type %d', 'pe'+self.arch.name, reloc_type)
+            return None
+
+        if next_rva is not None:
+            cls = RelocClass(owner=self, symbol=symbol, addr=addr, resolvewith=resolvewith, reloc_type=reloc_type, next_rva=next_rva)
+        else:
+            cls = RelocClass(owner=self, symbol=symbol, addr=addr, resolvewith=resolvewith, reloc_type=reloc_type)#, next_rva=next_rva)
+            #l.debug('Found RelocClass %s', str(RelocClass))
+            return cls
+
+        return None
 
     def _register_tls(self):
         if hasattr(self._pe, 'DIRECTORY_ENTRY_TLS'):
@@ -185,7 +223,7 @@ class PE(Backend):
         """
 
         for pe_section in self._pe.sections:
-            section = PESection(pe_section, remap_offset=self.linked_base)
+            section = PESection(pe_section, remap_offset=self.linked_base, align=self._pe.OPTIONAL_HEADER.SectionAlignment)
             self.sections.append(section)
             self.sections_map[section.name] = section
 
