@@ -162,7 +162,6 @@ class PE(Backend):
                     #l.debug('Registering reloc_data.type %d', reloc_data.type)
                     reloc = self._make_reloc(symbol=None, addr=reloc_data.rva, resolvewith=None, reloc_type=reloc_data.type, next_rva=None)
 
-
                 if reloc is not None:
                     self.relocs.append(reloc)
 
