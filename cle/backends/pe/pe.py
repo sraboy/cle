@@ -223,7 +223,7 @@ class PE(Backend):
         """
 
         for pe_section in self._pe.sections:
-            section = PESection(pe_section, remap_offset=self.linked_base, align=self._pe.OPTIONAL_HEADER.SectionAlignment)
+            section = PESection(pe_section, remap_offset=self.linked_base)
             self.sections.append(section)
             self.sections_map[section.name] = section
 
