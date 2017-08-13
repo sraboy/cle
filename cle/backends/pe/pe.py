@@ -123,7 +123,7 @@ class PE(Backend):
                     if imp_name is None: # must be an import by ordinal
                         imp_name = "%s.ordinal.%d" % (entry.dll, imp.ordinal)
                     symb = WinSymbol(self, imp_name, 0, True, False, imp.ordinal)
-                    addr=AT.from_lva(imp.address, self).to_rva()
+                    addr = AT.from_lva(imp.address, self).to_rva()
 
                     reloc = self._make_reloc(symbol=symb, resolvewith=entry.dll, addr=addr, reloc_type=None, next_rva=None)
                     if reloc is not None:
