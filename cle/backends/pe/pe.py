@@ -181,14 +181,11 @@ class PE(Backend):
                 l.debug('Failed to find relocation class for arch %s, type %d', 'pe'+self.arch.name, reloc_type)
             return None
 
-        if next_rva is not None:
-            cls = RelocClass(owner=self, symbol=symbol, addr=addr, resolvewith=resolvewith, reloc_type=reloc_type, next_rva=next_rva)
-        else:
-            cls = RelocClass(owner=self, symbol=symbol, addr=addr, resolvewith=resolvewith, reloc_type=reloc_type)#, next_rva=next_rva)
-            #l.debug('Found RelocClass %s', str(RelocClass))
-            return cls
+        cls = RelocClass(owner=self, symbol=symbol, addr=addr, resolvewith=resolvewith, reloc_type=reloc_type, next_rva=next_rva)
+        if cls is None:
+            l.warn('Failed to retrieve relocation for %s of type %s', symbol.name, reloc_type)
 
-        return None
+        return cls
 
     def _register_tls(self):
         if hasattr(self._pe, 'DIRECTORY_ENTRY_TLS'):
