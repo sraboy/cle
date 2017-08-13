@@ -4,7 +4,7 @@ import logging
 from . import Relocation
 from ...address_translator import AT
 
-l = logging.getLogger('cle.backends.pe.reloc')
+l = logging.getLogger('cle.backends.pe.generic_pe')
 
 # Reference: https://msdn.microsoft.com/en-us/library/ms809762.aspx
 class WinReloc(Relocation):
