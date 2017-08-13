@@ -51,9 +51,22 @@ class DllImport(WinReloc):
 
 
 class IMAGE_REL_BASED_HIGHADJ(WinReloc):
-    def __init__(self, owner, symbol, addr, resolvewith, reloc_type=None, next_rva=None):
-        super(IMAGE_REL_BASED_HIGHADJ, self).__init__(owner, symbol, addr)
+    def __init__(self, owner, addr, next_rva):
+        super(IMAGE_REL_BASED_HIGHADJ, self).__init__(owner, None, addr)
         self.next_rva = next_rva
+    @property
+    def value(self):
+        """
+        In all the other cases, we can ignore the relocation difference part of the
+        calculation because we simply use to_mva() to get our rebased address. In this
+        case, however, we have to adjust the un-rebased address first.
+        """
+        org_bytes = ''.join(self.owner_obj.memory.read_bytes(self.relative_addr, 2))
+        org_value = struct.unpack('<I', org_bytes)[0]
+        adjusted_value = (org_value << 16) + self.next_rva
+        adjusted_value = (AT.from_lva(adjusted_value, self.owner_obj) & 0xffff0000) >> 16
+        adjusted_bytes = struct.pack('<I', adjusted__value)
+        return adjusted_bytes
 
 class IMAGE_REL_BASED_HIGHLOW(WinReloc):
     @property
@@ -61,7 +74,7 @@ class IMAGE_REL_BASED_HIGHLOW(WinReloc):
         org_bytes = ''.join(self.owner_obj.memory.read_bytes(self.relative_addr, 4))
         org_value = struct.unpack('<I', org_bytes)[0]
         rebased_value = AT.from_lva(org_value, self.owner_obj).to_mva()
-        rebased_bytes = struct.pack('<I', rebased_value % 2**32)
+        rebased_bytes = struct.pack('<I', rebased_value)
         return rebased_bytes
 
 class IMAGE_REL_BASED_DIR64(WinReloc):
@@ -71,23 +84,24 @@ class IMAGE_REL_BASED_DIR64(WinReloc):
         org_value = struct.unpack('<Q', org_bytes)[0]
         rebased_value = AT.from_lva(org_value, self.owner_obj).to_mva()
         rebased_bytes = struct.pack('<Q', rebased_value)
-        #l.debug('Got rebased_bytes %s and rebased_value %s', hex(org_value), hex(rebased_value))
         return rebased_bytes
 
 class IMAGE_REL_BASED_HIGH(WinReloc):
     @property
     def value(self):
         org_bytes = ''.join(self.owner_obj.memory.read_bytes(self.relative_addr, 2))
-        org_value = struct.unpack('<I', org_bytes)[0]
+        org_value = struct.unpack('<H', org_bytes)[0]
         rebased_value = AT.from_lva(org_value, self.owner_obj).to_mva()
-        rebased_bytes = struct.pack('<H', rebased_value % 2**16)
-        return rebased_bytes
+        adjusted_value = (rebased_value >> 16) & 0xffff
+        adjusted_bytes = struct.pack('<H', adjusted_value)
+        return adjusted_bytes
 
 class IMAGE_REL_BASED_LOW(WinReloc):
     @property
     def value(self):
-        org_bytes = ''.join(self.owner_obj.memory.read_bytes(self.relative_addr, 4))
-        org_value = struct.unpack('<I', org_bytes)[0]
+        org_bytes = ''.join(self.owner_obj.memory.read_bytes(self.relative_addr, 2))
+        org_value = struct.unpack('<H', org_bytes)[0]
         rebased_value = AT.from_lva(org_value, self.owner_obj).to_mva()
-        rebased_bytes = struct.pack('<I', rebased_value & 0x0000FFFF)
-        return rebased_bytes
+        adjusted_value = rebased_value & 0x0000FFFF
+        adjusted_bytes = struct.pack('<H', adjusted_value)
+        return adjusted_bytes
