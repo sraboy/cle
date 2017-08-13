@@ -123,7 +123,7 @@ class PE(Backend):
                     if imp_name is None: # must be an import by ordinal
                         imp_name = "%s.ordinal.%d" % (entry.dll, imp.ordinal)
                     symb = WinSymbol(self, imp_name, 0, True, False, imp.ordinal)
-                    addr=AT.from_lva(imp.address, self).to_rva()
+                    addr = AT.from_lva(imp.address, self).to_rva()
 
                     reloc = self._make_reloc(symbol=symb, resolvewith=entry.dll, addr=addr, reloc_type=None, next_rva=None)
                     if reloc is not None:
@@ -181,14 +181,11 @@ class PE(Backend):
                 l.debug('Failed to find relocation class for arch %s, type %d', 'pe'+self.arch.name, reloc_type)
             return None
 
-        if next_rva is not None:
-            cls = RelocClass(owner=self, symbol=symbol, addr=addr, resolvewith=resolvewith, reloc_type=reloc_type, next_rva=next_rva)
-        else:
-            cls = RelocClass(owner=self, symbol=symbol, addr=addr, resolvewith=resolvewith, reloc_type=reloc_type)#, next_rva=next_rva)
-            #l.debug('Found RelocClass %s', str(RelocClass))
-            return cls
+        cls = RelocClass(owner=self, symbol=symbol, addr=addr, resolvewith=resolvewith, reloc_type=reloc_type, next_rva=next_rva)
+        if cls is None:
+            l.warn('Failed to retrieve relocation for %s of type %s', symbol.name, reloc_type)
 
-        return None
+        return cls
 
     def _register_tls(self):
         if hasattr(self._pe, 'DIRECTORY_ENTRY_TLS'):
@@ -223,7 +220,7 @@ class PE(Backend):
         """
 
         for pe_section in self._pe.sections:
-            section = PESection(pe_section, remap_offset=self.linked_base, align=self._pe.OPTIONAL_HEADER.SectionAlignment)
+            section = PESection(pe_section, remap_offset=self.linked_base)
             self.sections.append(section)
             self.sections_map[section.name] = section
 
