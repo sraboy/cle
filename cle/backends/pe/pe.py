@@ -181,7 +181,7 @@ class PE(Backend):
             return reloc
 
         # Handle all the normal base relocations
-        RelocClass = get_relocation('pe' + self.arch.name, reloc_type)
+        RelocClass = get_relocation(self.arch.name, reloc_type)
         if RelocClass is None:
             l.debug('Failed to find relocation class for arch %s, type %d', 'pe'+self.arch.name, reloc_type)
             return None

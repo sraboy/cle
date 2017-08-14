@@ -1,3 +1,14 @@
+import os
+import logging
+import importlib
+import archinfo
+
+from ...relocation import ALL_RELOCATIONS
+from ...relocation import complaint_log
+from ...relocations import Relocation
+
+path = os.path.dirname(os.path.abspath(__file__))
+l = logging.getLogger('cle.backends.pe.relocation')
 
 def load_relocations():
     for filename in os.listdir(path):
@@ -6,7 +17,8 @@ def load_relocations():
         if filename == '__init__.py':
             continue
 
-        module = importlib.import_module('.%s' % filename[:-3], 'cle.backends.relocations')
+        l.warn('Importing %s', filename)
+        module = importlib.import_module('.%s' % filename[:-3], 'cle.backends.pe.relocation')
 
         try:
             arch_name = module.arch
@@ -33,3 +45,5 @@ def get_relocation(arch, r_type):
             complaint_log.add((arch, r_type))
             l.warning("Unknown reloc %d on %s", r_type, arch)
         return None
+
+load_relocations()
