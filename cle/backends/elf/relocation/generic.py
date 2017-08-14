@@ -43,7 +43,7 @@ class GenericTLSModIdReloc(ELFReloc):
                 return False
             self.owner_obj.memory.write_addr_at(self.relative_addr, self.resolvedby.owner_obj.tls_module_id)
         return True
-        
+
 class GenericIRelativeReloc(ELFReloc):
     def relocate(self, solist, bypass_compatibility=False):
         if self.symbol.type == Symbol.TYPE_NONE:
@@ -87,12 +87,12 @@ class GenericAbsoluteReloc(ELFReloc):
     @property
     def value(self):
         return self.resolvedby.rebased_addr
-        
+
 class GenericCopyReloc(ELFReloc):
     @property
     def value(self):
         return self.resolvedby.owner_obj.memory.read_addr_at(self.resolvedby.relative_addr)
-        
+
 class MipsGlobalReloc(GenericAbsoluteReloc):
     pass
 

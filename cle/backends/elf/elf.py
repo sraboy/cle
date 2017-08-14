@@ -55,11 +55,11 @@ class ELF(MetaELF):
             self.set_arch(self.extract_arch(self.reader))
 
         self._addend = addend
-        
+
         self.strtab = None
         self.dynsym = None
         self.hashtable = None
-        
+
         self._dynamic = {}
         self.deps = []
         self.rela_type = None
@@ -92,7 +92,7 @@ class ELF(MetaELF):
         self.tls_block_size = None
         self.tls_tdata_start = None
         self.tls_tdata_size = None
-        
+
         self.__parsed_reloc_tables = set()
 
         # The linked image base should be evaluated before registering any segment or section due to
@@ -121,12 +121,12 @@ class ELF(MetaELF):
     #
     # Properties and Public Methods
     #
-    
+
     @classmethod
     def check_compatibility(cls, spec, obj):
         with stream_or_path(spec) as stream:
             return cls.extract_arch(elffile.ELFFile(stream)) == obj.arch
-            
+
     @staticmethod
     def is_compatible(stream):
         stream.seek(0)
@@ -172,7 +172,7 @@ class ELF(MetaELF):
             out.append(AT.from_lva(self._fini_func, self).to_mva())
         out.extend(map(lambda x: AT.from_lva(x, self).to_mva(), self._fini_arr))
         return out
-    
+
     def get_symbol(self, symid, symbol_table=None): # pylint: disable=arguments-differ
         """
         Gets a Symbol object for the specified symbol.
@@ -226,7 +226,7 @@ class ELF(MetaELF):
     #
     # Private Methods
     #
-    
+
     @staticmethod
     def _symbol_to_tuple(re_sym):
         """
@@ -370,7 +370,7 @@ class ELF(MetaELF):
         self.dynsym = None
         self.hashtable = None
         return self.__dict__
-        
+
     def __setstate__(self, data):
         self.__dict__.update(data)
         if self.binary_stream is None:
