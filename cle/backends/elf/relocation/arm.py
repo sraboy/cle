@@ -1,8 +1,7 @@
 import logging
 from . import generic
-from . import generic_elf
-from . import Relocation
-from ...address_translator import AT
+from ...relocations import Relocation
+from ....address_translator import AT
 
 l = logging.getLogger('cle.relocations.arm')
 arch = 'ARM'
@@ -171,13 +170,13 @@ class R_ARM_ABS32_NOI(generic.GenericAbsoluteAddendReloc):
 class R_ARM_REL32_NOI(generic.GenericPCRelativeAddendReloc):
     pass
 
-class R_ARM_TLS_DTPMOD32(generic_elf.GenericTLSModIdReloc):
+class R_ARM_TLS_DTPMOD32(generic.GenericTLSModIdReloc):
     pass
 
-class R_ARM_TLS_DTPOFF32(generic_elf.GenericTLSDoffsetReloc):
+class R_ARM_TLS_DTPOFF32(generic.GenericTLSDoffsetReloc):
     pass
 
-class R_ARM_TLS_TPOFF32(generic_elf.GenericTLSOffsetReloc):
+class R_ARM_TLS_TPOFF32(generic.GenericTLSOffsetReloc):
     pass
 
 class R_ARM_JUMP24(R_ARM_CALL):

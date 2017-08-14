@@ -8,7 +8,7 @@ from .symbol import WinSymbol
 from .regions import PESection
 from .. import register_backend, Backend
 from ...address_translator import AT
-from ..relocations import get_relocation
+from .relocation import get_relocation
 from ..relocations.generic_pe import WinReloc, DllImport
 
 l = logging.getLogger('cle.pe')

@@ -12,7 +12,7 @@ from .regions import ELFSection, ELFSegment
 from .hashtable import ELFHashTable, GNUHashTable
 from .metaelf import MetaELF
 from .. import register_backend
-from ..relocations import get_relocation
+from .relocation import get_relocation
 from ..relocations.generic import MipsGlobalReloc, MipsLocalReloc
 from ...patched_stream import PatchedStream
 from ...errors import CLEError, CLEInvalidBinaryError, CLECompatibilityError
