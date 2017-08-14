@@ -1,7 +1,7 @@
 import logging
 from . import generic
 
-l = logging.getLogger('cle.relocations.pe.arm')
+l = logging.getLogger('cle.backends.pe.relocation.arm')
 
 arch = 'arm'
 

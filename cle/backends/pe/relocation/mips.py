@@ -1,7 +1,7 @@
 import logging
 from . import generic
 
-l = logging.getLogger('cle.relocations.pe.mips')
+l = logging.getLogger('cle.backends.pe.relocation.mips')
 
 arch = 'mips'
 

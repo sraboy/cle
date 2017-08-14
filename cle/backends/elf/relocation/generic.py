@@ -6,7 +6,7 @@ from ... import Symbol
 import struct
 
 import logging
-l = logging.getLogger('cle.relocations.generic')
+l = logging.getLogger('cle.backends.elf.relocation.generic')
 
 class GenericTLSModIdReloc(Relocation):
     def relocate(self, solist, bypass_compatibility=False):

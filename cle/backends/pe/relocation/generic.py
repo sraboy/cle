@@ -1,12 +1,10 @@
 from ....address_translator import AT
-from ....errors import CLEOperationError
 from ...relocation import Relocation
-from ... import Symbol
 
 import struct
 
 import logging
-l = logging.getLogger('cle.relocations.generic')
+l = logging.getLogger('cle.backends.pe.relocation.generic')
 
 # Reference: https://msdn.microsoft.com/en-us/library/ms809762.aspx
 class WinReloc(Relocation):
@@ -17,7 +15,7 @@ class WinReloc(Relocation):
     def __init__(self, owner, symbol, addr, resolvewith=None):#, reloc_type=None, next_rva=None): # pylint: disable=unused-argument
         super(WinReloc, self).__init__(owner, symbol, addr, None)
 
-        self.is_base_reloc = True if symbol == None else False
+        self.is_base_reloc = True if symbol is None else False
         self.is_import = not self.is_base_reloc
 
         self.resolvewith = resolvewith
@@ -67,7 +65,7 @@ class IMAGE_REL_BASED_HIGHADJ(WinReloc):
         org_value = struct.unpack('<I', org_bytes)[0]
         adjusted_value = (org_value << 16) + self.next_rva
         adjusted_value = (AT.from_lva(adjusted_value, self.owner_obj) & 0xffff0000) >> 16
-        adjusted_bytes = struct.pack('<I', adjusted__value)
+        adjusted_bytes = struct.pack('<I', adjusted_value)
         return adjusted_bytes
 
 class IMAGE_REL_BASED_HIGHLOW(WinReloc):

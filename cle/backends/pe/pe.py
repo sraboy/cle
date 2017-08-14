@@ -9,9 +9,9 @@ from .regions import PESection
 from .. import register_backend, Backend
 from ...address_translator import AT
 from .relocation import get_relocation
-from .relocation.generic import WinReloc, DllImport
+from .relocation.generic import DllImport, IMAGE_REL_BASED_HIGHADJ
 
-l = logging.getLogger('cle.pe')
+l = logging.getLogger('cle.backends.pe')
 
 
 class PE(Backend):
@@ -177,7 +177,7 @@ class PE(Backend):
             reloc = DllImport(owner=self, symbol=symbol, addr=addr, resolvewith=resolvewith)
             return reloc
         if next_rva is not None:
-            reloc = generic_pe.IMAGE_REL_BASED_HIGHADJ(owner=self, symbol=None, addr=addr, next_rva=next_rva)
+            reloc = IMAGE_REL_BASED_HIGHADJ(owner=self, addr=addr, next_rva=next_rva)
             return reloc
 
         # Handle all the normal base relocations

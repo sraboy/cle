@@ -3,7 +3,7 @@ from . import generic
 from ...relocation import Relocation
 from ....address_translator import AT
 
-l = logging.getLogger('cle.relocations.arm')
+l = logging.getLogger('cle.backends.elf.relocations.arm')
 arch = 'ARM'
 
 # Reference: "ELF for the ARM Architecture ABI r2.10"

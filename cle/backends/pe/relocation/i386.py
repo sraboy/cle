@@ -1,7 +1,7 @@
 import logging
 from . import generic
 
-l = logging.getLogger('cle.relocations.pe.x86')
+l = logging.getLogger('cle.backends.pe.relocation.x86')
 
 arch = 'X86'
 
