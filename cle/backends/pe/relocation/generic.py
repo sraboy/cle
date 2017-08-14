@@ -1,6 +1,6 @@
 from ....address_translator import AT
 from ....errors import CLEOperationError
-from ...relocations import Relocation
+from ...relocation import Relocation
 from ... import Symbol
 
 import struct
@@ -22,7 +22,7 @@ class WinReloc(Relocation):
 
         self.resolvewith = resolvewith
         if self.resolvewith is not None:
-            self.resolvewith = self.resolvewith.lower()
+            self.resolvewith = str(self.resolvewith).lower()
 
 
     def resolve_symbol(self, solist, bypass_compatibility=False):

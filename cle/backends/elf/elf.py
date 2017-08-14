@@ -13,7 +13,7 @@ from .hashtable import ELFHashTable, GNUHashTable
 from .metaelf import MetaELF
 from .. import register_backend
 from .relocation import get_relocation
-from ..relocations.generic import MipsGlobalReloc, MipsLocalReloc
+from .relocation.generic import MipsGlobalReloc, MipsLocalReloc
 from ...patched_stream import PatchedStream
 from ...errors import CLEError, CLEInvalidBinaryError, CLECompatibilityError
 from ...utils import ALIGN_DOWN, ALIGN_UP, get_mmaped_data, stream_or_path

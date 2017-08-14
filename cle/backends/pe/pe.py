@@ -9,7 +9,7 @@ from .regions import PESection
 from .. import register_backend, Backend
 from ...address_translator import AT
 from .relocation import get_relocation
-from ..relocations.generic_pe import WinReloc, DllImport
+from .relocation.generic import WinReloc, DllImport
 
 l = logging.getLogger('cle.pe')
 

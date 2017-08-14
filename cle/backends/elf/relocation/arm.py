@@ -1,6 +1,6 @@
 import logging
 from . import generic
-from ...relocations import Relocation
+from ...relocation import Relocation
 from ....address_translator import AT
 
 l = logging.getLogger('cle.relocations.arm')

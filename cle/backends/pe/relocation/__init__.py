@@ -2,10 +2,11 @@ import os
 import logging
 import importlib
 import archinfo
+from collections import defaultdict
+from ...relocation import Relocation
 
-from ...relocation import ALL_RELOCATIONS
-from ...relocation import complaint_log
-from ...relocations import Relocation
+ALL_RELOCATIONS = defaultdict(dict)
+complaint_log = set()
 
 path = os.path.dirname(os.path.abspath(__file__))
 l = logging.getLogger('cle.backends.pe.relocation')

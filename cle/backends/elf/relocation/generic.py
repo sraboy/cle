@@ -1,6 +1,6 @@
 from ....address_translator import AT
 from ....errors import CLEOperationError
-from ...relocations import Relocation
+from ...relocation import Relocation
 from ... import Symbol
 
 import struct
@@ -19,7 +19,6 @@ class GenericTLSModIdReloc(Relocation):
             self.owner_obj.memory.write_addr_at(self.relative_addr, self.resolvedby.owner_obj.tls_module_id)
         return True
 
-
 class GenericTLSDoffsetReloc(Relocation):
     @property
     def value(self):
@@ -28,7 +27,6 @@ class GenericTLSDoffsetReloc(Relocation):
     def resolve_symbol(self, solist, bypass_compatibility=False):   # pylint: disable=unused-argument
         self.resolve(None)
         return True
-
 
 class GenericTLSOffsetReloc(Relocation):
     def relocate(self, solist, bypass_compatibility=False):
@@ -45,7 +43,6 @@ class GenericTLSOffsetReloc(Relocation):
                 self.relative_addr,
                 self.resolvedby.owner_obj.tls_block_offset + self.addend + self.symbol.relative_addr - hell_offset)
         return True
-
 
 class GenericIRelativeReloc(Relocation):
     def relocate(self, solist, bypass_compatibility=False):
