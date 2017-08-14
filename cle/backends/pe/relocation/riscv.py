@@ -1,5 +1,6 @@
 import logging
 from . import generic
+from .pereloc import PEReloc
 
 l = logging.getLogger('cle.backends.pe.relocation.riscv')
 
@@ -20,11 +21,11 @@ class IMAGE_REL_BASED_HIGH(generic.IMAGE_REL_BASED_HIGH):
 class IMAGE_REL_BASED_LOW(generic.IMAGE_REL_BASED_LOW):
     pass
 
-class IMAGE_REL_BASED_RISCV_HIGH20(generic.WinReloc):
+class IMAGE_REL_BASED_RISCV_HIGH20(PEReloc):
     pass
 
-class IMAGE_REL_BASED_RISCV_LOW12I(generic.WinReloc):
+class IMAGE_REL_BASED_RISCV_LOW12I(PEReloc):
     pass
 
-class IMAGE_REL_BASED_RISCV_LOW12S(generic.WinReloc):
+class IMAGE_REL_BASED_RISCV_LOW12S(PEReloc):
     pass

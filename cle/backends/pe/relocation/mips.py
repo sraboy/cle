@@ -1,5 +1,6 @@
 import logging
 from . import generic
+from .pereloc import PEReloc
 
 l = logging.getLogger('cle.backends.pe.relocation.mips')
 
@@ -20,8 +21,8 @@ class IMAGE_REL_BASED_HIGH(generic.IMAGE_REL_BASED_HIGH):
 class IMAGE_REL_BASED_LOW(generic.IMAGE_REL_BASED_LOW):
     pass
 
-class IMAGE_REL_BASED_MIPS_JMPADDR(generic.WinReloc):
+class IMAGE_REL_BASED_MIPS_JMPADDR(PEReloc):
     pass
 
-class IMAGE_REL_BASED_MIPS_JMPADDR16(generic.WinReloc):
+class IMAGE_REL_BASED_MIPS_JMPADDR16(PEReloc):
     pass

@@ -16,26 +16,17 @@ class Relocation(object):
                         this attribute holds the symbol from a different binary that was used to resolve the import.
     :ivar resolved:     Whether the application of this relocation was succesful
     """
-    def __init__(self, owner, symbol, relative_addr, addend=None):
+    def __init__(self, owner, symbol, relative_addr):
         super(Relocation, self).__init__()
         self.owner_obj = owner
         self.arch = owner.arch
         self.symbol = symbol
         self.relative_addr = relative_addr
-        self.is_rela = addend is not None
-        self._addend = addend
         self.resolvedby = None
         self.resolved = False
         self.resolvewith = None
         if self.symbol is not None and self.symbol.is_import:
             self.owner_obj.imports[self.symbol.name] = self
-
-    @property
-    def addend(self):
-        if self.is_rela:
-            return self._addend
-        else:
-            return self.owner_obj.memory.read_addr_at(self.relative_addr, orig=True)
 
     def resolve_symbol(self, solist, bypass_compatibility=False): # pylint: disable=unused-argument
         if self.symbol.is_static:
