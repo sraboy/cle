@@ -18,7 +18,7 @@ def load_relocations():
         if filename == '__init__.py':
             continue
 
-        l.warn('Importing %s', filename)
+        l.debug('Importing PE relocation module: %s', filename[:-3])
         module = importlib.import_module('.%s' % filename[:-3], 'cle.backends.pe.relocation')
 
         try:
