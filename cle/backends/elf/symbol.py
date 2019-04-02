@@ -1,3 +1,5 @@
+from enum import Enum
+
 from ..symbol import Symbol, SymbolType
 from ...address_translator import AT
 from .symbol_type import ELFSymbolType
@@ -5,6 +7,13 @@ from .symbol_type import ELFSymbolType
 
 def maybedecode(string):
     return string if type(string) is str else string.decode()
+
+
+class ELFSymbolVisibility(Enum):
+    STV_DEFAULT = 0
+    STV_INTERNAL = 1
+    STV_HIDDEN = 2
+    STV_PROTECTED = 3
 
 
 class ELFSymbol(Symbol):
@@ -18,6 +27,7 @@ class ELFSymbol(Symbol):
     def __init__(self, owner, symb):
         self._subtype = ELFSymbolType[symb.entry.st_info.type]
         self._type = self._subtype.to_base_type()
+        self._visibility = ELFSymbolVisibility[symb.entry['st_other']['visibility']]
 
         sec_ndx, value = symb.entry.st_shndx, symb.entry.st_value
 
@@ -32,7 +42,7 @@ class ELFSymbol(Symbol):
                                         self.type)
 
         self.binding = symb.entry.st_info.bind
-        self.is_hidden = symb.entry['st_other']['visibility'] == 'STV_HIDDEN'
+
         self.section = sec_ndx if type(sec_ndx) is not str else None
         self.is_static = self._type == SymbolType.TYPE_SECTION or sec_ndx == 'SHN_ABS'
         self.is_common = sec_ndx == 'SHN_COMMON'
@@ -48,3 +58,7 @@ class ELFSymbol(Symbol):
     @property
     def subtype(self) -> ELFSymbolType:
         return self._subtype
+
+    @property
+    def visibility(self) -> ELFSymbolVisibility:
+        return self._visibility
