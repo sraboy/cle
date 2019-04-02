@@ -11,9 +11,11 @@ from collections import OrderedDict
 
 __all__ = ('MetaELF',)
 
-if str is not bytes:
-    unicode = str
 
+def maybedecode(string):
+    # so... it turns out that pyelftools is garbage and will transparently give you either strings or bytestrings
+    # based on pretty much nothing whatsoever
+    return string if type(string) is str else string.decode()
 
 class MetaELF(Backend):
     """
@@ -69,7 +71,7 @@ class MetaELF(Backend):
         func_jmprel = OrderedDict((k, v) for k, v in self.jmprel.items() if v.symbol.type not in (SymbolType.TYPE_OBJECT, SymbolType.TYPE_SECTION, SymbolType.TYPE_OTHER))
 
         # ATTEMPT 1: some arches will just leave the plt stub addr in the import symbol
-        if self.arch.name in ('ARM', 'ARMEL', 'ARMHF', 'AARCH64', 'MIPS32', 'MIPS64'):
+        if self.arch.name in ('ARM', 'ARMEL', 'ARMHF', 'ARMCortexM', 'AARCH64', 'MIPS32', 'MIPS64'):
             for name, reloc in func_jmprel.items():
                 if plt_sec is None or plt_sec.contains_addr(reloc.symbol.linked_addr):
                     self._add_plt_stub(name, reloc.symbol.linked_addr, sanity_check=plt_sec is None)
@@ -142,7 +144,7 @@ class MetaELF(Backend):
 
                     step_forward = False
                     # the block shouldn't touch any cc_* registers
-                    if self.arch.name in ('X86', 'AMD64', 'ARMEL', 'ARMHF'):
+                    if self.arch.name in ('X86', 'AMD64', 'ARMEL', 'ARMHF', 'ARMCortexM'):
                         cc_regs = { self.arch.registers['cc_op'][0], self.arch.registers['cc_ndep'][0],
                                     self.arch.registers['cc_dep1'][0], self.arch.registers['cc_dep2'][0]
                                     }
@@ -315,8 +317,8 @@ class MetaELF(Backend):
                     elif seg.header.p_type == 'PT_DYNAMIC':
                         for tag in seg.iter_tags():
                             if tag.entry.d_tag == 'DT_SONAME':
-                                return tag.soname
-                        if type(path) in (bytes, unicode):
+                                return maybedecode(tag.soname)
+                        if type(path) is str:
                             return os.path.basename(path)
 
             except elftools.common.exceptions.ELFError:
